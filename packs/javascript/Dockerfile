@@ -1,5 +1,6 @@
-FROM node:8-onbuild
+FROM node:9-slim
 ENV PORT 8080
 EXPOSE 8080
-RUN npm install
+WORKDIR /usr/src/app
+COPY . .
 CMD ["npm", "start"]

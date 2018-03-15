@@ -1,0 +1,13 @@
+
+dependencies:
+- alias: expose
+  name: exposecontroller
+  repository: https://chartmuseum.build.cd.jenkins-x.io
+  version: 2.3.55
+- alias: cleanup
+  name: exposecontroller
+  repository: https://chartmuseum.build.cd.jenkins-x.io
+  version: 2.3.55
+- alias: preview
+  name: REPLACE_ME
+  repository: file://../REPLACE_ME

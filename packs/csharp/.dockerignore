@@ -1,6 +1,8 @@
 Dockerfile
 draft.toml
-chart/
+charts/
 NOTICE
+LICENSE
+README.md
 bin/
 obj/
