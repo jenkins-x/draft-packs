@@ -1,18 +1,33 @@
-# Default values for node.
+# Default values for node projects.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
-replicaCount: 2
+replicaCount: 1
 image:
+  repository: draft
+  tag: dev
   pullPolicy: IfNotPresent
 service:
-  name: node
+  name: REPLACE_ME
   type: ClusterIP
-  externalPort: 8080
+  externalPort: 80
   internalPort: 8080
+  annotations:
+    fabric8.io/expose: "true"
 resources:
   limits:
     cpu: 100m
-    memory: 128Mi
+    memory: 256Mi
   requests:
-    cpu: 100m
+    cpu: 80m
     memory: 128Mi
+probePath: /
+livenessProbe:
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+readinessProbe:
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+terminationGracePeriodSeconds: 10
