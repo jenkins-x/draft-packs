@@ -9,5 +9,5 @@ dependencies:
   repository: https://chartmuseum.build.cd.jenkins-x.io
   version: 2.3.55
 - alias: preview
-  name: REPLACE_ME
-  repository: file://../REPLACE_ME
+  name: REPLACE_ME_APP_NAME
+  repository: file://../REPLACE_ME_APP_NAME
