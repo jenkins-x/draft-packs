@@ -12,7 +12,7 @@ pipeline {
       GIT_API_TOKEN     = "$GIT_CREDS_PSW"
     }
     stages {
-      stage('CI Build and push snapshpt') {
+      stage('CI Build and push snapshot') {
         when {
           branch 'PR-*'
         }
