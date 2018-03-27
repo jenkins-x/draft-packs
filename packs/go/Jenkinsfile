@@ -74,7 +74,7 @@ pipeline {
         steps {
           dir ('/home/jenkins/go/src/REPLACE_ME_GIT_PROVIDER/REPLACE_ME_ORG/REPLACE_ME_APP_NAME/charts/REPLACE_ME_APP_NAME') {
             container('go') {
-              sh 'jx step changelog --version \$(cat ../../VERSION)'
+              sh 'jx step changelog --version v\$(cat ../../VERSION)'
 
               // release the helm chart
               sh 'make release'
