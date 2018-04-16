@@ -24,8 +24,7 @@ pipeline {
             sh "cargo install"
             sh "cp ~/.cargo/bin/REPLACE_ME_APP_NAME ."
 
-            sh "docker build -t \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION ."
-            sh "docker push \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION"
+            sh 'export VERSION=$PREVIEW_VERSION && skaffold run -f skaffold.yaml'
           }
 
           dir ('./charts/preview') {
@@ -61,8 +60,7 @@ pipeline {
             sh "cargo install"
             sh "cp ~/.cargo/bin/REPLACE_ME_APP_NAME ."
 
-            sh "docker build -t \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION) ."
-            sh "docker push \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION)"
+            sh 'export VERSION=`cat VERSION` && skaffold run -f skaffold.yaml'
           }
         }
       }
