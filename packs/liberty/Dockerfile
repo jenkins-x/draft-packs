@@ -6,7 +6,7 @@ EXPOSE 9080
 RUN ln -s /opt/ol/wlp/usr/servers /servers
 
 
-COPY target/*.war /servers/defaultServer/dropins/app.war
+COPY target/*.war  target/*.jar /servers/defaultServer/dropins/
 
 ENTRYPOINT ["/opt/ol/wlp/bin/server", "run"]
 CMD ["defaultServer"]
