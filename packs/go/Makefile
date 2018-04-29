@@ -3,7 +3,7 @@ GO := GO15VENDOREXPERIMENT=1 go
 NAME := REPLACE_ME_APP_NAME
 OS := $(shell uname)
 MAIN_GO := hello.go
-ROOT_PACKAGE := $(GIT_PROVIDER)/$(ORG)/$(NAME)
+ROOT_PACKAGE := $(GIT_PROVIDER)/REPLACE_ME_ORG/$(NAME)
 GO_VERSION := $(shell $(GO) version | sed -e 's/^[^0-9.]*\([0-9.]*\).*/\1/')
 PACKAGE_DIRS := $(shell $(GO) list ./... | grep -v /vendor/)
 PKGS := $(shell go list ./... | grep -v /vendor | grep -v generated)
