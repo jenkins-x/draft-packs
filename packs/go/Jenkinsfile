@@ -24,6 +24,9 @@ pipeline {
             container('go') {
               sh "make linux"
               sh 'export VERSION=$PREVIEW_VERSION && skaffold run -f skaffold.yaml'
+
+              sh "jx step validate --min-jx-version 1.2.36"
+              sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION"
             }
           }
           dir ('/home/jenkins/go/src/REPLACE_ME_GIT_PROVIDER/REPLACE_ME_ORG/REPLACE_ME_APP_NAME/charts/preview') {
@@ -59,6 +62,8 @@ pipeline {
               container('go') {
                 sh "make build"
                 sh 'export VERSION=`cat VERSION` && skaffold run -f skaffold.yaml'
+                sh "jx step validate --min-jx-version 1.2.36"
+                sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION)"
               }
             }
           }
