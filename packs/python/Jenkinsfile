@@ -18,9 +18,8 @@ pipeline {
           HELM_RELEASE = "$PREVIEW_NAMESPACE".toLowerCase()
         }
         steps {
-          container('nodejs') {
-            sh "npm install"
-            sh "npm test"
+          container('python') {
+            sh "python -m unittest"
 
             sh 'export VERSION=$PREVIEW_VERSION && skaffold run -f skaffold.yaml'
 
@@ -29,7 +28,7 @@ pipeline {
           }
 
           dir ('./charts/preview') {
-           container('nodejs') {
+           container('python') {
              sh "make preview"
              sh "jx preview --app $APP_NAME --dir ../.."
            }
@@ -41,7 +40,7 @@ pipeline {
           branch 'master'
         }
         steps {
-          container('nodejs') {
+          container('python') {
             // ensure we're not on a detached head
             sh "git checkout master"
             sh "git config --global credential.helper store"
@@ -51,13 +50,12 @@ pipeline {
             sh "echo \$(jx-release-version) > VERSION"
           }
           dir ('./charts/REPLACE_ME_APP_NAME') {
-            container('nodejs') {
+            container('python') {
               sh "make tag"
             }
           }
-          container('nodejs') {
-            sh "npm install"
-            sh "npm test"
+          container('python') {
+            sh "python -m unittest"
 
             sh 'export VERSION=`cat VERSION` && skaffold run -f skaffold.yaml'
             sh "jx step validate --min-jx-version 1.2.36"
