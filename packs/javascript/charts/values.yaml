@@ -15,10 +15,10 @@ service:
     fabric8.io/expose: "true"
 resources:
   limits:
-    cpu: 100m
+    cpu: 400m
     memory: 256Mi
   requests:
-    cpu: 80m
+    cpu: 200m
     memory: 128Mi
 probePath: /
 livenessProbe:
