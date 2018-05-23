@@ -20,7 +20,7 @@ pipeline {
         steps {
           container('nodejs') {
             sh "npm install"
-            sh "DISPLAY=:99 npm test"
+            sh "CI=true DISPLAY=:99 npm test"
 
             sh 'export VERSION=$PREVIEW_VERSION && skaffold run -f skaffold.yaml'
 
