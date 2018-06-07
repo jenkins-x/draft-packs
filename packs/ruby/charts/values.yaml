@@ -7,7 +7,7 @@ image:
   tag: dev
   pullPolicy: IfNotPresent
 service:
-  name: ruby
+  name: REPLACE_ME_APP_NAME
   type: ClusterIP
   externalPort: 80
   internalPort: 3000
