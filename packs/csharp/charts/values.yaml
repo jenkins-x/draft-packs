@@ -3,6 +3,8 @@
 # Declare variables to be passed into your templates.
 replicaCount: 2
 image:
+  repository: draft
+  tag: dev
   pullPolicy: IfNotPresent
 service:
   name: REPLACE_ME_APP_NAME
