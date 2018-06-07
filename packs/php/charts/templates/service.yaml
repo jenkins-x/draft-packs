@@ -1,7 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: REPLACE_ME_APP_NAME
+{{- if .Values.service.name }}
+  name: {{ .Values.service.name }}
+{{- else }}
+  name: {{ template "fullname" . }}
+{{- end }}
   labels:
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
 spec:

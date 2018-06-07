@@ -5,7 +5,7 @@ replicaCount: 2
 image:
   pullPolicy: IfNotPresent
 service:
-  name: dotnetcore
+  name: REPLACE_ME_APP_NAME
   type: ClusterIP
   externalPort: 8080
   internalPort: 80
