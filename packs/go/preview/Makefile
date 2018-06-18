@@ -1,9 +1,6 @@
 OS := $(shell uname)
 
 preview:
-	helm init --client-only
-	helm repo add chartmuseum http://jenkins-x-chartmuseum:8080
-	helm repo add chartmuseum https://chartmuseum.build.cd.jenkins-x.io
 ifeq ($(OS),Darwin)
 	sed -i "" -e "s/version:.*/version: $(PREVIEW_VERSION)/" Chart.yaml
 	sed -i "" -e "s/version:.*/version: $(PREVIEW_VERSION)/" ../*/Chart.yaml
@@ -18,5 +15,4 @@ else
 	exit -1
 endif
 	echo "  version: $(PREVIEW_VERSION)" >> requirements.yaml
-	helm dependency build
-	helm lint
+	jx step helm build
