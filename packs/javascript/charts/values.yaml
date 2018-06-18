@@ -1,4 +1,3 @@
-# Default values for node projects.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 replicaCount: 1
@@ -16,12 +15,12 @@ service:
     fabric8.io/ingress.annotations: "kubernetes.io/ingress.class: nginx"
 resources:
   limits:
-    cpu: 400m
-    memory: 256Mi
+    cpu: 500m
+    memory: 512Mi
   requests:
     cpu: 200m
-    memory: 128Mi
-probePath: /
+    memory: 256Mi
+probePath: /actuator/health
 livenessProbe:
   initialDelaySeconds: 60
   periodSeconds: 10
@@ -32,3 +31,16 @@ readinessProbe:
   successThreshold: 1
   timeoutSeconds: 1
 terminationGracePeriodSeconds: 10
+
+env:
+  enabled: false
+  values:
+  - name: ENV_NAME
+    value: some value
+
+config:
+  enabled: false
+  mountPath: /etc/REPLACE_ME_APP_NAME
+  files:
+    config.yml: |-
+      profiling:                      No

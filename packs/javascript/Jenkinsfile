@@ -3,14 +3,14 @@
 
 pipeline {
     agent {
-      label "jenkins-gradle"
+      label "jenkins-nodejs"
     }
     environment {
 	//Override these incase of go development
 	//_APP_ROOT               = "$_HOME"
 	//_BUILD_ROOT             = "$_APP_ROOT/$GIT_PROVIDER/$APP_NAME"
 
-	JX_AGENT                = "gradle"
+	JX_AGENT                = "nodejs"
       	ORG           		= 'REPLACE_ME_ORG'
       	APP_NAME       		= 'REPLACE_ME_APP_NAME'
 	GIT_PROVIDER		= 'REPLACE_ME_GIT_PROVIDER'

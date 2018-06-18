@@ -1,51 +1,62 @@
-CHART_REPO := http://jenkins-x-chartmuseum:8080
-CURRENT=$(pwd)
+SHELL := /bin/bash
+GO := GO15VENDOREXPERIMENT=1 go
 NAME := REPLACE_ME_APP_NAME
-ORG := REPLACE_ME_ORG
 OS := $(shell uname)
-RELEASE_VERSION := $(shell cat ../../VERSION)
+MAIN_GO := main.go
+ROOT_PACKAGE := $(GIT_PROVIDER)/REPLACE_ME_ORG/$(NAME)
+GO_VERSION := $(shell $(GO) version | sed -e 's/^[^0-9.]*\([0-9.]*\).*/\1/')
+PACKAGE_DIRS := $(shell $(GO) list ./... | grep -v /vendor/)
+PKGS := $(shell go list ./... | grep -v /vendor | grep -v generated)
+BUILDFLAGS := ''
+CGO_ENABLED = 0
+VENDOR_DIR=vendor
 
-build: clean
-	rm -rf requirements.lock
-	helm dependency build
-	helm lint
+all: build
 
-install: clean build
-	helm install . --name ${NAME}
+check: fmt build test
 
-upgrade: clean build
-	helm upgrade ${NAME} .
+build:
+	CGO_ENABLED=$(CGO_ENABLED) $(GO) build -ldflags $(BUILDFLAGS) -o bin/$(NAME) $(MAIN_GO)
 
-delete:
-	helm delete --purge ${NAME}
+test: 
+	CGO_ENABLED=$(CGO_ENABLED) $(GO) test $(PACKAGE_DIRS) -test.v
+
+full: $(PKGS)
+
+install:
+	GOBIN=${GOPATH}/bin $(GO) install -ldflags $(BUILDFLAGS) $(MAIN_GO)
+
+fmt:
+	@FORMATTED=`$(GO) fmt $(PACKAGE_DIRS)`
+	@([[ ! -z "$(FORMATTED)" ]] && printf "Fixed unformatted files:\n$(FORMATTED)") || true
 
 clean:
-	rm -rf charts
-	rm -rf ${NAME}*.tgz
+	rm -rf build release
 
-release: clean
-	helm dependency build
-	helm lint
-	helm init --client-only
-	helm package .
-	curl --fail -u $(CHARTMUSEUM_CREDS_USR):$(CHARTMUSEUM_CREDS_PSW) --data-binary "@$(NAME)-$(shell sed -n 's/^version: //p' Chart.yaml).tgz" $(CHART_REPO)/api/charts
-	rm -rf ${NAME}*.tgz%
+linux:
+	CGO_ENABLED=$(CGO_ENABLED) GOOS=linux GOARCH=amd64 $(GO) build -ldflags $(BUILDFLAGS) -o bin/$(NAME) $(MAIN_GO)
 
-replace:
-ifeq ($(OS),Darwin)
-	sed -i "" -e "s/version:.*/version: $(RELEASE_VERSION)/" Chart.yaml
-	sed -i "" -e "s/tag: .*/tag: $(RELEASE_VERSION)/" values.yaml
-else ifeq ($(OS),Linux)
-	sed -i -e "s/version:.*/version: $(RELEASE_VERSION)/" Chart.yaml
-	sed -i -e "s/repository: .*/repository: $(JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST):$(JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT)\/$(ORG)\/$(NAME)/" values.yaml
-	sed -i -e "s/tag: .*/tag: $(RELEASE_VERSION)/" values.yaml
-else
-	echo "platfrom $(OS) not supported to release from"
-	exit -1
-endif
+.PHONY: release clean
 
-tag: replace
-	git add --all
-	git commit -m "release $(RELEASE_VERSION)" --allow-empty # if first release then no verion update is performed
-	git tag -fa v$(RELEASE_VERSION) -m "Release version $(RELEASE_VERSION)"
-	git push origin v$(RELEASE_VERSION)
+FGT := $(GOPATH)/bin/fgt
+$(FGT):
+	go get github.com/GeertJohan/fgt
+
+GOLINT := $(GOPATH)/bin/golint
+$(GOLINT):
+	go get github.com/golang/lint/golint
+
+$(PKGS): $(GOLINT) $(FGT)
+	@echo "LINTING"
+	@$(FGT) $(GOLINT) $(GOPATH)/src/$@/*.go
+	@echo "VETTING"
+	@go vet -v $@
+	@echo "TESTING"
+	@go test -v $@
+
+.PHONY: lint
+lint: vendor | $(PKGS) $(GOLINT) # ❷
+	@cd $(BASE) && ret=0 && for pkg in $(PKGS); do \
+	    test -z "$$($(GOLINT) $$pkg | tee /dev/stderr)" || ret=1 ; \
+	done ; exit $$ret
+
