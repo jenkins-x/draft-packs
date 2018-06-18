@@ -1,88 +1,131 @@
+//Created by: Vyshakh P Rad
+//Maintainer: Vyshakh P Rad
+
 pipeline {
     agent {
       label "jenkins-gradle"
     }
     environment {
-      ORG               = 'REPLACE_ME_ORG'
-      APP_NAME          = 'REPLACE_ME_APP_NAME'
-      CHARTMUSEUM_CREDS = credentials('jenkins-x-chartmuseum')
+	//Override these incase of go development
+	//_APP_ROOT               = "$_HOME"
+	//_BUILD_ROOT             = "$_APP_ROOT/$GIT_PROVIDER/$APP_NAME"
+
+	JX_AGENT                = "gradle"
+      	ORG           		= 'REPLACE_ME_ORG'
+      	APP_NAME       		= 'REPLACE_ME_APP_NAME'
+	GIT_PROVIDER		= 'REPLACE_ME_GIT_PROVIDER'
+      	CHARTS_PATH		= "./charts/$APP_NAME"
+	SNAPSHOT_VERSION	= "0.0.0-snapshot-$BRANCH_NAME-$BUILD_NUMBER".toLowerCase()
+     	PREVIEW_NAMESPACE 	= "$APP_NAME-$BRANCH_NAME".toLowerCase()
+	HELM_RELEASE 		= "$PREVIEW_NAMESPACE".toLowerCase()
+      	CHARTMUSEUM_CREDS 	= credentials('jenkins-x-chartmuseum')
+
+	_DOCKER_REGISTRY	= "\$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT"
+	_HOME			= "/home/jenkins"
+	_APP_ROOT		= "."
+	_BUILD_ROOT		= "."
+	_CHARTS_PATH		= "$_BUILD_ROOT/charts/$APP_NAME"
+
+	_ENV_BETA		= 'beta'
+	_ENV_ALPHA		= 'alpha'
+	
     }
     stages {
-      stage('CI Build and push snapshot') {
-        when {
-          branch 'PR-*'
-        }
-        environment {
-          PREVIEW_VERSION = "0.0.0-SNAPSHOT-$BRANCH_NAME-$BUILD_NUMBER"
-          PREVIEW_NAMESPACE = "$APP_NAME-$BRANCH_NAME".toLowerCase()
-          HELM_RELEASE = "$PREVIEW_NAMESPACE".toLowerCase()
-        }
+      stage('Env Info') {
         steps {
-          container('gradle') {
-            // TODO 
-            //sh "mvn versions:set -DnewVersion=$PREVIEW_VERSION"
-            sh "gradle clean build"
-            sh 'export VERSION=$PREVIEW_VERSION && skaffold run -f skaffold.yaml'
-            sh "jx step validate --min-jx-version 1.2.36"
-            sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION"
-          }
-
-          dir ('./charts/preview') {
-           container('gradle') {
-             sh "make preview"
-             sh "jx preview --app $APP_NAME --dir ../.."
-           }
-          }
-        }
+          container(JX_AGENT) {
+		sh "printenv"	
+		sh "jx version -b true"
+	  }
+	}
       }
       stage('Build Release') {
-        when {
-          branch 'master'
-        }
         steps {
-          container('gradle') {
+	  dir(_BUILD_ROOT) {
+	   container(JX_AGENT) {
+            checkout scm
             // ensure we're not on a detached head
-            sh "git checkout master"
+            sh "git checkout $BRANCH_NAME"
             sh "git config --global credential.helper store"
             sh "jx step validate --min-jx-version 1.1.73"
             sh "jx step git credentials"
+
             // so we can retrieve the version in later steps
-            sh "echo \$(jx-release-version) > VERSION"
-            // TODO
-            //sh "mvn versions:set -DnewVersion=\$(cat VERSION)"
-          }
-          dir ('./charts/REPLACE_ME_APP_NAME') {
-            container('gradle') {
-              sh "make tag"
+            sh '''
+              if [ "$BRANCH_NAME" = "master" ] ; then
+                echo $(jx-release-version) > VERSION
+              else
+                echo $(jx-release-version)-snapshot-$BRANCH_NAME-$BUILD_NUMBER-$(git rev-parse --short HEAD) > VERSION
+              fi
+              cat VERSION
+            '''
+           }
+	  }
+
+          dir (_CHARTS_PATH) {
+            container(JX_AGENT) {
+	      sh '''
+              	if [ "$BRANCH_NAME" = "master" ] ; then
+		  make tag
+              	else
+		  make replace
+              	fi
+              '''
             }
           }
-          container('gradle') {
-            sh 'gradle clean build'
+
+	  dir(_BUILD_ROOT) {
+           container(JX_AGENT) {
+            sh 'make build'
 
             sh 'export VERSION=`cat VERSION` && skaffold run -f skaffold.yaml'
             sh "jx step validate --min-jx-version 1.2.36"
-            sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION)"
+	    sh "echo $_DOCKER_REGISTRY/$ORG/$APP_NAME:\$(cat VERSION)"
+            sh "jx step post build --image $_DOCKER_REGISTRY/$ORG/$APP_NAME:\$(cat VERSION)"
+	   }
           }
         }
       }
-      stage('Promote to Environments') {
+      stage('Promote to Testing') {
+        when {
+          branch 'build'
+        }
+
+        steps {
+          dir (_CHARTS_PATH) {
+            container(JX_AGENT) {
+              //sh 'jx step changelog --version v\$(cat ../../VERSION)'
+
+              // release the helm chart
+              sh 'make release'
+
+              // promote through all 'Auto' promotion Environments
+              sh 'jx promote -b --env $_ENV_ALPHA --timeout 1h --version \$(cat ../../VERSION)'
+            }
+          }
+        }
+      }
+
+      stage('Promote to Beta') {
         when {
           branch 'master'
         }
+
         steps {
-          dir ('./charts/REPLACE_ME_APP_NAME') {
-            container('gradle') {
+          dir (_CHARTS_PATH) {
+            container(JX_AGENT) {
               sh 'jx step changelog --version v\$(cat ../../VERSION)'
 
               // release the helm chart
               sh 'make release'
 
               // promote through all 'Auto' promotion Environments
-              sh 'jx promote -b --all-auto --timeout 1h --version \$(cat ../../VERSION)'
+              sh 'jx promote -b --env $_ENV_BETA --timeout 1h --version \$(cat ../../VERSION)'
             }
           }
         }
       }
+
     }
     post {
         always {
