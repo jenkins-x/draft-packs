@@ -56,7 +56,7 @@ pipeline {
             }
             dir ('/home/jenkins/go/src/REPLACE_ME_GIT_PROVIDER/REPLACE_ME_ORG/REPLACE_ME_APP_NAME') {
               // so we can retrieve the version in later steps
-              sh "echo \$(jx-release-version) > VERSION"
+              sh "echo \$(GITHUB_AUTH_TOKEN=\$(echo  | git credential-store get | grep -o -P '(?<=password=).*'); jx-release-version) > VERSION"
             }
             dir ('/home/jenkins/go/src/REPLACE_ME_GIT_PROVIDER/REPLACE_ME_ORG/REPLACE_ME_APP_NAME/charts/REPLACE_ME_APP_NAME') {
               sh "make tag"
