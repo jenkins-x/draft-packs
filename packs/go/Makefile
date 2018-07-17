@@ -7,6 +7,7 @@ ROOT_PACKAGE := $(GIT_PROVIDER)/REPLACE_ME_ORG/$(NAME)
 GO_VERSION := $(shell $(GO) version | sed -e 's/^[^0-9.]*\([0-9.]*\).*/\1/')
 PACKAGE_DIRS := $(shell $(GO) list ./... | grep -v /vendor/)
 PKGS := $(shell go list ./... | grep -v /vendor | grep -v generated)
+PKGS := $(subst  :,_,$(PKGS))
 BUILDFLAGS := ''
 CGO_ENABLED = 0
 VENDOR_DIR=vendor
