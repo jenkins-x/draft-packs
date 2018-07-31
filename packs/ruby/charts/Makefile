@@ -28,6 +28,8 @@ release: clean
 	helm init --client-only
 	helm package .
 	curl --fail -u $(CHARTMUSEUM_CREDS_USR):$(CHARTMUSEUM_CREDS_PSW) --data-binary "@$(NAME)-$(shell sed -n 's/^version: //p' Chart.yaml).tgz" $(CHART_REPO)/api/charts
+	helm repo add jenkins-x-api https://chartmuseum.build.cd.jenkins-x.io
+	helm repo update
 	rm -rf ${NAME}*.tgz%
 
 tag:
@@ -36,7 +38,7 @@ ifeq ($(OS),Darwin)
 	sed -i "" -e "s/tag: .*/tag: $(RELEASE_VERSION)/" values.yaml
 else ifeq ($(OS),Linux)
 	sed -i -e "s/version:.*/version: $(RELEASE_VERSION)/" Chart.yaml
-	sed -i -e "s|repository: .*|repository: $(JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST):$(JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT)/$(ORG)/$(APP_NAME)|" values.yaml
+	sed -i -e "s|repository: .*|repository: $(JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST):$(JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT)/REPLACE_ME_ORG/REPLACE_ME_APP_NAME|" values.yaml
 	sed -i -e "s/tag: .*/tag: $(RELEASE_VERSION)/" values.yaml
 else
 	echo "platfrom $(OS) not supported to release from"
