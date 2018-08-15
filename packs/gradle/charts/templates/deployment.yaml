@@ -23,6 +23,11 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
+        env:
+        - name: HEAP_SIZE
+          value: "256m"
+        - name: PERMGEN_SIZE
+          value: "128m"
         livenessProbe:
           httpGet:
             path: {{ .Values.probePath }}

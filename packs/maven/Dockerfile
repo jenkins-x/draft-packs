@@ -12,4 +12,4 @@ COPY pom.xml target/lib* /opt/lib/
 COPY target/*.jar /opt/app.jar
 WORKDIR /opt
 
-ENTRYPOINT exec java -Xms256m -Xmx256m -XX:MaxMetaspaceSize=128m $JAVA_OPTS -jar app.jar
+ENTRYPOINT exec java -Xms$HEAP_SIZE -Xmx$HEAP_SIZE -XX:MaxMetaspaceSize=$PERMGEN_SIZE $JAVA_OPTS -jar app.jar
