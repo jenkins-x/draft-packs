@@ -8,6 +8,9 @@ metadata:
 {{- end }}
   labels:
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+{{- if .Values.service.labels }}
+{{ toYaml .Values.service.labels | indent 4 }}
+{{- end }}
 {{- if .Values.service.annotations }}
   annotations:
 {{ toYaml .Values.service.annotations | indent 4 }}
@@ -17,6 +20,9 @@ spec:
   ports:
   - port: {{ .Values.service.externalPort }}
     targetPort: {{ .Values.service.internalPort }}
+    {{- if (and (eq .Values.service.type "NodePort") (not (empty .Values.service.nodePort))) }}
+    nodePort: {{ .Values.service.nodePort }}
+    {{- end }}
     protocol: TCP
     name: http
   selector:
