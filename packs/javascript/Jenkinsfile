@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label "jenkins-nodejs"
-    }
+    agent any
     environment {
       ORG               = 'REPLACE_ME_ORG'
       APP_NAME          = 'REPLACE_ME_APP_NAME'
@@ -18,7 +16,7 @@ pipeline {
           HELM_RELEASE = "$PREVIEW_NAMESPACE".toLowerCase()
         }
         steps {
-          container('nodejs') {
+
             sh "npm install"
             sh "CI=true DISPLAY=:99 npm test"
 
@@ -26,13 +24,13 @@ pipeline {
 
             sh "jx step validate --min-jx-version 1.2.36"
             sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION"
-          }
+
 
           dir ('./charts/preview') {
-           container('nodejs') {
+
              sh "make preview"
              sh "jx preview --app $APP_NAME --dir ../.."
-           }
+
           }
         }
       }
@@ -41,28 +39,25 @@ pipeline {
           branch 'master'
         }
         steps {
-          container('nodejs') {
-            // ensure we're not on a detached head
-            sh "git checkout master"
-            sh "git config --global credential.helper store"
-            sh "jx step validate --min-jx-version 1.1.73"
-            sh "jx step git credentials"
-            // so we can retrieve the version in later steps
-            sh "echo \$(jx-release-version) > VERSION"
-          }
-          dir ('./charts/REPLACE_ME_APP_NAME') {
-            container('nodejs') {
-              sh "make tag"
-            }
-          }
-          container('nodejs') {
-            sh "npm install"
-            sh "CI=true DISPLAY=:99 npm test"
+          git 'https://REPLACE_ME_GIT_PROVIDER/REPLACE_ME_ORG/REPLACE_ME_APP_NAME.git'
 
-            sh 'export VERSION=`cat VERSION` && skaffold run -f skaffold.yaml'
-            sh "jx step validate --min-jx-version 1.2.36"
-            sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION)"
+          sh "git config --global credential.helper store"
+          sh "jx step validate --min-jx-version 1.1.73"
+          sh "jx step git credentials"
+          // so we can retrieve the version in later steps
+          sh "echo \$(jx-release-version) > VERSION"
+
+          dir ('./charts/REPLACE_ME_APP_NAME') {
+            sh "make tag"
           }
+
+          sh "npm install"
+          sh "CI=true DISPLAY=:99 npm test"
+
+          sh 'export VERSION=`cat VERSION` && skaffold run -f skaffold.yaml'
+          sh "jx step validate --min-jx-version 1.2.36"
+          sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION)"
+
         }
       }
       stage('Promote to Environments') {
@@ -71,22 +66,14 @@ pipeline {
         }
         steps {
           dir ('./charts/REPLACE_ME_APP_NAME') {
-            container('nodejs') {
-              sh 'jx step changelog --version v\$(cat ../../VERSION)'
 
-              // release the helm chart
-              sh 'make release'
+            sh 'jx step changelog --version v\$(cat ../../VERSION)'
 
-              // promote through all 'Auto' promotion Environments
-              sh 'jx promote -b --all-auto --timeout 1h --version \$(cat ../../VERSION)'
-            }
+            sh 'make release'
+            // promote through all 'Auto' promotion Environments
+            sh 'jx promote -b --all-auto --timeout 1h --version \$(cat ../../VERSION)'
           }
         }
       }
-    }
-    post {
-        always {
-            cleanWs()
-        }
     }
   }
