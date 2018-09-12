@@ -6,6 +6,8 @@ pipeline {
       ORG               = 'REPLACE_ME_ORG'
       APP_NAME          = 'REPLACE_ME_APP_NAME'
       CHARTMUSEUM_CREDS = credentials('jenkins-x-chartmuseum')
+      MAVEN_HOME        = '$M2_HOME'
+      JAVA_HOME         = "/usr/lib/jvm/java"
     }
     stages {
       stage('CI Build and push snapshot') {
@@ -18,9 +20,10 @@ pipeline {
           HELM_RELEASE = "$PREVIEW_NAMESPACE".toLowerCase()
         }
         steps {
+          configArtifactoryStage()
           container('maven') {
-            sh "mvn versions:set -DnewVersion=$PREVIEW_VERSION"
-            sh "mvn install"
+            runMaven("versions:set -DnewVersion=" + "$PREVIEW_VERSION", null)
+            runMaven("install", null)
             sh 'export VERSION=$PREVIEW_VERSION && skaffold run -f skaffold.yaml'
 
             sh "jx step validate --min-jx-version 1.2.36"
@@ -40,6 +43,7 @@ pipeline {
           branch 'master'
         }
         steps {
+          configArtifactoryStage()
           container('maven') {
             // ensure we're not on a detached head
             sh "git checkout master"
@@ -48,15 +52,15 @@ pipeline {
             sh "jx step git credentials"
             // so we can retrieve the version in later steps
             sh "echo \$(jx-release-version) > VERSION"
-            sh "mvn versions:set -DnewVersion=\$(cat VERSION)"
+            runMaven("versions:set -DnewVersion=\$(jx-release-version)", null)
           }
           dir ('./charts/REPLACE_ME_APP_NAME') {
-            container('maven') {
+           container('maven') {
               sh "make tag"
             }
           }
           container('maven') {
-            sh 'mvn clean deploy'
+            deploy()
 
             sh 'export VERSION=`cat VERSION` && skaffold run -f skaffold.yaml'
 
@@ -96,3 +100,49 @@ Select Proceed or Abort to terminate the build pod"""
         }
     }
   }
+
+def rtServer, buildInfo, rtMaven
+void configArtifactoryStage() {
+    script {
+      if (useArtifactory()) {
+        rtServer = Artifactory.server "JX_ARTIFACTORY_SERVER"
+        buildInfo = Artifactory.newBuildInfo()
+        rtMaven = Artifactory.newMavenBuild()
+        rtMaven.deployer releaseRepo: 'libs-release-local', snapshotRepo: 'libs-snapshot-local', server: rtServer
+        rtMaven.resolver releaseRepo: 'libs-release', snapshotRepo: 'libs-snapshot', server: rtServer
+        rtMaven.deployer.deployArtifacts = false
+      }
+    }
+}
+
+void runMaven(goals, buildInfo) {
+    script {
+      if (useArtifactory()) {
+        rtMaven.run pom: 'pom.xml', goals: goals, buildInfo: buildInfo
+      } else {
+        sh "mvn " + goals
+      }
+    }
+}
+
+void deploy() {
+    script {
+      if (useArtifactory()) {
+        runMaven("install", buildInfo)
+        rtMaven.deployer.deployArtifacts buildInfo
+        rtServer.publishBuildInfo buildInfo
+      } else {
+        runMaven("clean deploy", null)
+      }
+    }
+}
+
+boolean useArtifactory() {
+    script {
+      try {
+        return Artifactory != null && Artifactory.server("JX_ARTIFACTORY_SERVER") != null
+      } catch (ignored) {
+        return false
+      }
+    }
+}
