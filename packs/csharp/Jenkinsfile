@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label "jenkins-jx-base"
-    }
+    agent any
     environment {
       ORG               = 'REPLACE_ME_ORG'
       APP_NAME          = 'REPLACE_ME_APP_NAME'
@@ -18,16 +16,12 @@ pipeline {
           HELM_RELEASE = "$PREVIEW_NAMESPACE".toLowerCase()
         }
         steps {
-          container('jx-base') {
-            sh "docker build -t \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION ."
-            sh "docker push \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION"
-          }
+          sh "docker build -t \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION ."
+          sh "docker push \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION"
 
           dir ('./charts/preview') {
-           container('jx-base') {
-             sh "make preview"
-             sh "jx preview --app $APP_NAME --dir ../.."
-           }
+            sh "make preview"
+            sh "jx preview --app $APP_NAME --dir ../.."
           }
         }
       }
@@ -36,24 +30,17 @@ pipeline {
           branch 'master'
         }
         steps {
-          container('jx-base') {
-            // ensure we're not on a detached head
-            sh "git checkout master"
-            // until we switch to the new kubernetes / jenkins credential implementation use git credentials store
-            sh "git config --global credential.helper store"
-            // so we can retrieve the version in later steps
-            sh "echo \$(jx-release-version) > VERSION"
-          }
+          git 'https://REPLACE_ME_GIT_PROVIDER/REPLACE_ME_ORG/REPLACE_ME_APP_NAME.git'
+          // until we switch to the new kubernetes / jenkins credential implementation use git credentials store
+          sh "git config --global credential.helper store"
+          // so we can retrieve the version in later steps
+          sh "echo \$(jx-release-version) > VERSION"
           dir ('./charts/REPLACE_ME_APP_NAME') {
-            container('jx-base') {
-              sh "jx step git credentials"
-              sh "make tag"
-            }
+            sh "jx step git credentials"
+            sh "make tag"
           }
-          container('jx-base') {
-            sh "docker build -t \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION) ."
-            sh "docker push \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION)"
-          }
+          sh "docker build -t \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION) ."
+          sh "docker push \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION)"
         }
       }
       stage('Promote to Environments') {
@@ -62,15 +49,13 @@ pipeline {
         }
         steps {
           dir ('./charts/REPLACE_ME_APP_NAME') {
-            container('jx-base') {
-              sh 'jx step changelog --version v\$(cat ../../VERSION)'
+            sh 'jx step changelog --version v\$(cat ../../VERSION)'
 
-              // release the helm chart
-              sh 'make release'
+            // release the helm chart
+            sh 'make release'
 
-              // promote through all 'Auto' promotion Environments
-              sh 'jx promote -b --all-auto --timeout 1h --version \$(cat ../../VERSION) --no-wait'
-            }
+            // promote through all 'Auto' promotion Environments
+            sh 'jx promote -b --all-auto --timeout 1h --version \$(cat ../../VERSION) --no-wait'
           }
         }
       }

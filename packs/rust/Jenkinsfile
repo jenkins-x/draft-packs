@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label "jenkins-rust"
-    }
+    agent any
     environment {
       ORG               = 'REPLACE_ME_ORG'
       APP_NAME          = 'REPLACE_ME_APP_NAME'
@@ -18,22 +16,18 @@ pipeline {
           HELM_RELEASE = "$PREVIEW_NAMESPACE".toLowerCase()
         }
         steps {
-          container('rust') {
-            // seems we need to upgrade rust else we get compile errors using Rust 1.24.1
-            sh 'rustup override set nightly'
-            sh "cargo install"
-            sh "cp ~/.cargo/bin/REPLACE_ME_APP_NAME ."
+          // seems we need to upgrade rust else we get compile errors using Rust 1.24.1
+          sh 'rustup override set nightly'
+          sh "cargo install"
+          sh "cp ~/.cargo/bin/REPLACE_ME_APP_NAME ."
 
-            sh 'export VERSION=$PREVIEW_VERSION && skaffold build -f skaffold.yaml'
-            sh "jx step validate --min-jx-version 1.2.36"
-            sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION"
-          }
+          sh 'export VERSION=$PREVIEW_VERSION && skaffold build -f skaffold.yaml'
+          sh "jx step validate --min-jx-version 1.2.36"
+          sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION"
 
           dir ('./charts/preview') {
-           container('rust') {
-             sh "make preview"
-             sh "jx preview --app $APP_NAME --dir ../.."
-           }
+            sh "make preview"
+            sh "jx preview --app $APP_NAME --dir ../.."
           }
         }
       }
@@ -42,30 +36,23 @@ pipeline {
           branch 'master'
         }
         steps {
-          container('rust') {
-            // ensure we're not on a detached head
-            sh "git checkout master"
-            sh "git config --global credential.helper store"
-            sh "jx step validate --min-jx-version 1.1.73"
-            sh "jx step git credentials"
-            // so we can retrieve the version in later steps
-            sh "echo \$(jx-release-version) > VERSION"
-          }
+          git 'https://REPLACE_ME_GIT_PROVIDER/REPLACE_ME_ORG/REPLACE_ME_APP_NAME.git'
+          sh "git config --global credential.helper store"
+          sh "jx step validate --min-jx-version 1.1.73"
+          sh "jx step git credentials"
+          // so we can retrieve the version in later steps
+          sh "echo \$(jx-release-version) > VERSION"
           dir ('./charts/REPLACE_ME_APP_NAME') {
-            container('rust') {
-              sh "make tag"
-            }
+            sh "make tag"
           }
-          container('rust') {
-            // seems we need to upgrade rust else we get compile errors using Rust 1.24.1
-            sh 'rustup override set nightly'
-            sh "cargo install"
-            sh "cp ~/.cargo/bin/REPLACE_ME_APP_NAME ."
+          // seems we need to upgrade rust else we get compile errors using Rust 1.24.1
+          sh 'rustup override set nightly'
+          sh "cargo install"
+          sh "cp ~/.cargo/bin/REPLACE_ME_APP_NAME ."
 
-            sh 'export VERSION=`cat VERSION` && skaffold build -f skaffold.yaml'
-            sh "jx step validate --min-jx-version 1.2.36"
-            sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION)"
-          }
+          sh 'export VERSION=`cat VERSION` && skaffold build -f skaffold.yaml'
+          sh "jx step validate --min-jx-version 1.2.36"
+          sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION)"
         }
       }
       stage('Promote to Environments') {
@@ -74,15 +61,13 @@ pipeline {
         }
         steps {
           dir ('./charts/REPLACE_ME_APP_NAME') {
-            container('rust') {
-              sh 'jx step changelog --version \$(cat ../../VERSION)'
+            sh 'jx step changelog --version \$(cat ../../VERSION)'
 
-              // release the helm chart
-              sh 'make release'
+            // release the helm chart
+            sh 'make release'
 
-              // promote through all 'Auto' promotion Environments
-              sh 'jx promote -b --all-auto --timeout 1h --version \$(cat ../../VERSION) --no-wait'
-            }
+            // promote through all 'Auto' promotion Environments
+            sh 'jx promote -b --all-auto --timeout 1h --version \$(cat ../../VERSION) --no-wait'
           }
         }
       }
