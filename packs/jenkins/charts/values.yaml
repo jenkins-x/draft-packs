@@ -21,7 +21,7 @@ resources:
   requests:
     cpu: 500m
     memory: 512Mi
-probePath: /
+probePath: /login
 livenessProbe:
   initialDelaySeconds: 60
   periodSeconds: 10
