@@ -19,4 +19,4 @@ preview:
   image:
     repository:
     tag:
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
