@@ -10,7 +10,7 @@ check: build test
 
 build:
 	java \
-		-jar /opt/cwp/custom-war-packager.jar) \
+		-jar /opt/cwp/custom-war-packager.jar \
 		-configPath packager-config.yml -version ${VERSION}
 
 test: 
