@@ -42,6 +42,7 @@ pipeline {
           branch 'master'
         }
         steps {
+          script{properties([disableConcurrentBuilds()])}
           container('go') {
             dir ('/home/jenkins/go/src/REPLACE_ME_GIT_PROVIDER/REPLACE_ME_ORG/REPLACE_ME_APP_NAME') {
               checkout scm
