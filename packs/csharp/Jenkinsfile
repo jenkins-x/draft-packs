@@ -43,7 +43,7 @@ pipeline {
             sh "git config --global credential.helper store"
 
             //have to get credentials to avoid get version error
-			sh "jx step git credentials"
+	    sh "jx step git credentials"
             // so we can retrieve the version in later steps
             sh "echo \$(jx-release-version) > VERSION"
           }
