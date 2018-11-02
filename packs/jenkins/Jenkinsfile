@@ -27,7 +27,7 @@ pipeline {
           }
           dir ('/home/jenkins/go/src/REPLACE_ME_GIT_PROVIDER/REPLACE_ME_ORG/REPLACE_ME_APP_NAME/charts/preview') {
             sh "make preview"
-            sh "jx preview --app $APP_NAME --dir ../.."
+            sh "jx preview --batch-mode --app $APP_NAME --dir ../.."
           }
         }
       }

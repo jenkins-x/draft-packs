@@ -28,7 +28,7 @@ pipeline {
           dir ('./charts/preview') {
 
              sh "make preview"
-             sh "jx preview --app $APP_NAME --dir ../.."
+             sh "jx preview --batch-mode --app $APP_NAME --dir ../.."
 
           }
         }
