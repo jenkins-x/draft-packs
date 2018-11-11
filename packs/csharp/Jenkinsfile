@@ -31,12 +31,9 @@ pipeline {
         }
         steps {
           git 'https://REPLACE_ME_GIT_PROVIDER/REPLACE_ME_ORG/REPLACE_ME_APP_NAME.git'
-          // until we switch to the new kubernetes / jenkins credential implementation use git credentials store
-          sh "git config --global credential.helper store"
           // so we can retrieve the version in later steps
           sh "echo \$(jx-release-version) > VERSION"
           dir ('./charts/REPLACE_ME_APP_NAME') {
-            sh "jx step git credentials"
             sh "make tag"
           }
           sh "docker build -t \$DOCKER_REGISTRY/$ORG/$APP_NAME:\$(cat VERSION) ."
