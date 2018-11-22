@@ -28,6 +28,8 @@ release: clean
 	helm init --client-only
 	helm package .
 	curl --fail -u $(CHARTMUSEUM_CREDS_USR):$(CHARTMUSEUM_CREDS_PSW) --data-binary "@$(NAME)-$(shell sed -n 's/^version: //p' Chart.yaml).tgz" $(CHART_REPO)/api/charts
+	helm repo add jenkins-x-api https://chartmuseum.build.cd.jenkins-x.io
+	helm repo update
 	rm -rf ${NAME}*.tgz%
 
 tag:
