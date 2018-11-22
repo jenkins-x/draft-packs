@@ -6,6 +6,7 @@ RELEASE_VERSION := $(shell cat ../../VERSION)
 
 build: clean
 	rm -rf requirements.lock
+	helm init
 	helm dependency build
 	helm lint
 
@@ -23,6 +24,7 @@ clean:
 	rm -rf ${NAME}*.tgz
 
 release: clean
+	helm init
 	helm dependency build
 	helm lint
 	helm init --client-only
