@@ -1,21 +1,5 @@
-# Built-in Packs
+# NOTE these build packs are migrating...
 
-This directory contains the built-in Draft packs which are installed via `draft init`.
+We are in the process of migrating these build packs into https://github.com/jenkins-x-buildpacks
 
-_If you are interested in creating your own packs_, you can simply create those packs in your local `$(draft home)/packs` directory.
-
-```
-packs/github.com/Azure/draft/packs
-  |
-  |- PACKNAME
-  |     |
-  |     |- charts/
-  |     |    |- Chart.yaml
-  |     |    |- ...
-  |     |- Dockerfile
-  |     |- detect
-  |     |- ...
-  |
-  |- PACK2
-        |-...
-```
+So that we can support both Classic and Kubernetes workloads as part of the Cloud Native Jenkins initiative along with adding additional deployment platforms easily
