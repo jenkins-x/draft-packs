@@ -13,9 +13,11 @@ pipeline {
         container('maven') {
           script {
             if (env.BRANCH_NAME == 'master') {
-              // ensure it is not on a detached head, and set the version
+              // ensure it is not on a detached head, set up git credentials, and set the version
               sh '''
                 git checkout master
+                git config --global credential.helper store
+                jx step git credentials
                 echo \$(jx-release-version) > VERSION
                 mvn versions:set -DnewVersion=\$(cat VERSION)
               '''
@@ -67,10 +69,6 @@ pipeline {
         branch 'master'
       }
       steps {
-        container('maven') {
-          sh "git config --global credential.helper store"
-          sh "jx step git credentials"
-        }
         dir ('./charts/REPLACE_ME_APP_NAME') {
           container('maven') {
             sh "make tag"
